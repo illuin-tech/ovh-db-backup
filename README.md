@@ -2,6 +2,8 @@
 
 Minimal script to trigger the dump of a [OVH Web Cloud Database](https://www.ovhcloud.com/en/web-cloud/databases/), then wait for its availability. This script does *NOT* work with a [Public Cloud Database](https://www.ovhcloud.com/en/public-cloud/databases/)).
 
+This script is meant for usage as a Kubernetes `Job` triggered before deployment using Helm or Argo hooks.
+
 ## Config
 
 You need :
@@ -36,4 +38,50 @@ export OVH_APPLICATION_KEY=...
 export OVH_APPLICATION_SECRET=... 
 export OVH_CONSUMER_KEY=...
 python -m ovh_db_backup
+```
+
+#### Docker
+
+```bash
+docker run --rm \
+ -e BACKUP_SERVICE_NAME=... \
+ -e BACKUP_DATABASE_NAME=... \
+ -e OVH_APPLICATION_KEY=... \
+ -e OVH_APPLICATION_SECRET=... \ 
+ -e OVH_CONSUMER_KEY=... \
+ ghcr.io/illuin-tech/ovh-db-backup
+```
+
+#### Kubernetes
+
+Example job (and secret holding env vars):
+```kubernetes
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ovh-db-backup
+type: Opaque
+stringData:
+  BACKUP_SERVICE_NAME: ...
+  BACKUP_DATABASE_NAME: ...
+  OVH_APPLICATION_KEY: ...
+  OVH_APPLICATION_SECRET: ...
+  OVH_CONSUMER_KEY: ...
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  generateName: ovh-db-backup-
+spec:
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      containers:
+        - name: ovh-db-backup
+          image: ghcr.io/illuin-tech/ovh-db-backup
+          envFrom:
+            - secretRef:
+                name: ovh-db-backup
+      restartPolicy: Never
 ```
