@@ -2,7 +2,7 @@
 
 Minimal script to trigger the dump of a [OVH Web Cloud Database](https://www.ovhcloud.com/en/web-cloud/databases/), then wait for its availability. This script does *NOT* work with a [Public Cloud Database](https://www.ovhcloud.com/en/public-cloud/databases/)).
 
-This script is meant for usage as a Kubernetes `Job` triggered before deployment using Helm or Argo hooks.
+This script is meant for usage as a Kubernetes `Job` triggered before deployment using Helm or Argo hooks (see example below).
 
 ## Config
 
@@ -13,6 +13,7 @@ You need :
 - OVH Endpoint : defaults to `ovh-eu`
 - LOG_LEVEL : defaults to `INFO`. Accepts Python standard levels (upper case). *Caution* : `DEBUG` will output public expirable URL of the backup, which is a sensitive information.
 
+![screenshot of OVH Manager](./docs/screenshot.png)
 ## Credentials
 
 You need credentials with the following authorizations :
@@ -73,8 +74,14 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   generateName: ovh-db-backup-
+  annotations:
+    # For Helm
+    helm.sh/hook: post-install
+    helm.sh/hook-delete-policy: before-hook-creation
+    # For ArgoCD
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
-  ttlSecondsAfterFinished: 86400
   template:
     spec:
       containers:
