@@ -15,6 +15,7 @@ class App:
     max_retries: int = 60
     sleep_time: int = 6
     client: ovh.Client = None
+    send_email: bool = None
 
     def wait_until_new_backup(self, latest_backup: int, retries: int = 0) -> int:
         backups = self.client.get(
@@ -45,7 +46,8 @@ class App:
             f"Creating a new backup for {self.service_name}/{self.database_name}"
         )
         task = self.client.post(
-            f"/hosting/privateDatabase/{self.service_name}/database/{self.database_name}/dump"
+            f"/hosting/privateDatabase/{self.service_name}/database/{self.database_name}/dump",
+            sendEmail=self.send_email,
         )
         self.logger.debug(f"New backup task details : {task!r}")
         self.logger.info(f"Waiting until backup is finished")
@@ -67,5 +69,7 @@ if __name__ == "__main__":
         client=ovh.Client(endpoint=os.getenv("OVH_ENDPOINT", "ovh-eu")),
         service_name=os.getenv("BACKUP_SERVICE_NAME"),
         database_name=os.getenv("BACKUP_DATABASE_NAME"),
+        send_email=os.getenv("BACKUP_SEND_EMAIL", "False").lower()
+        in ("true", "1", "yes"),
     )
     app.trigger_backup()
